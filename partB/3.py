@@ -61,5 +61,4 @@ start = 's'
 goal = 'g'
 
 path = a_star_search(graph, start, goal, heuristics) 
-for i in path: 
-    print(i, "->", end="")
+print("->".join(path))

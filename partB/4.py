@@ -1,60 +1,96 @@
-# define node class 
-class Node: 
-    def __init__(self, name, heuristic=0): 
-        self.name = name 
+class Node:
+    def __init__(self, name, heuristic=0, is_and=False):
+        self.name = name
         self.heuristic = heuristic
-        self.children = [] 
+        self.children = []  # Corrected typo
+        self.is_and = is_and
+        self.optimal_path = []
 
-    def add_child(self, name, type='OR'): 
-        self.children.append((name, type)) 
+    def add_child_group(self, group):
+        """Adds a group of children to the node."""
+        self.children.append(group)
 
 
-def ao_star_search(node:Node, solution_path=[]): 
+def ao_star(node: Node):
+    if not node.children:  # Base case: leaf node
+        print(f"{node.name} is a leaf node with heuristic {node.heuristic}")
+        return node.heuristic
 
-    # check if the current node is the last node 
-    if not node.children: 
-        return node.heuristic, solution_path + [node.name] 
-    
-    best_cost = float('inf') 
-    best_path = None 
+    print(f"Evaluating node {node.name} with initial heuristic {node.heuristic}")
+    costs = []
+    paths = []
 
-    for (child, ntype) in node.children: 
-        if ntype == 'OR':
-            # if node type(ntype) is or select the node with least cost 
-            cost, path = ao_star_search(child, solution_path + [node.name])
-            if cost < best_cost: 
-                best_cost = cost 
-                best_path = path 
-        elif ntype == 'AND': 
-            # and 
-            tot_cost = 0 
-            curr_path = solution_path + [node.name] 
-            all_paths = [] 
-            for child, _ in node.children: 
-                cost, path = ao_star_search(child, curr_path)
-                tot_cost += cost 
-                all_paths.extend(path) 
-            if tot_cost < best_cost: 
-                best_cost = tot_cost 
-                best_path = all_paths 
+    # Evaluate each group of children
+    for child_group in node.children:
+        total_cost = 0
+        group_path = []
 
-    return best_cost, best_path
+        # Process each child in the group
+        for child, cost in child_group:
+            c = cost + ao_star(child)
+            total_cost += c
+            group_path.append((child, c))  # Store the actual child reference
 
-# Define the nodes with heuristic values
-A = Node("A", heuristic=5)
-B = Node("B", heuristic=2)
-C = Node("C", heuristic=4)
-D = Node("D", heuristic=1)
-E = Node("E", heuristic=3)
+        if node.is_and:
+            print(f"AND Node {node.name}: adding costs of {[child.name for child, _ in group_path]} => total: {total_cost}")
+        else:
+            print(f"OR Node {node.name}: considering cost {total_cost} for child group {[child.name for child, _ in group_path]}")
+        costs.append(total_cost)
+        paths.append(group_path)
 
-# Construct the graph with AND-OR relationships
-A.add_child(B, "OR")
-A.add_child(C, "OR")
-B.add_child(D, "AND")
-B.add_child(E, "AND")
-C.add_child(D, "OR")
+    # Choose the best path
+    best_index = costs.index(min(costs))
+    best_cost = costs[best_index]
+    node.optimal_path = paths[best_index]
 
-# Execute AO* from the start node
-cost, path = ao_star_search(A)
-print("Optimal Cost:", cost)
-print("Solution Path:", " -> ".join(path))
+    print(f"Best cost for {node.name} is updated to {best_cost}")
+    print(f"Optimal path: {[child.name for child, _ in node.optimal_path]}")
+    node.heuristic = best_cost
+    return best_cost
+
+
+def print_optimal_path(node: Node, curr_path = []):
+    curr_path.append(node.name)
+    if not node.optimal_path:
+        return curr_path
+
+    for child, _ in node.optimal_path:
+        print_optimal_path(child, curr_path)
+
+    return curr_path
+
+
+# Create nodes
+a = Node('a')
+b = Node('b')
+c = Node('c', is_and=True)
+d = Node('d', is_and=True)
+e = Node('e', heuristic=7)
+f = Node('f', heuristic=9)
+g = Node('g', heuristic=3)
+h = Node('h', heuristic=0)
+i = Node('i', heuristic=0)
+j = Node('j', heuristic=0)
+
+# Define relationships
+a.add_child_group([(b, 1)])
+a.add_child_group([(c, 1), (d, 1)])
+
+b.add_child_group([(e, 1)])
+b.add_child_group([(f, 1)])
+
+c.add_child_group([(g, 1)])
+c.add_child_group([(h, 1), (i, 1)])
+
+d.add_child_group([(j, 1)])
+
+# Run AO* algorithm
+print("Starting AO* algorithm")
+optimal_cost = ao_star(a)
+print("\nAO* algorithm completed.")
+print(f"Optimal cost: {optimal_cost}")
+
+# Print the optimal path
+optimal_path = print_optimal_path(a)
+print("\nOptimal path:")
+print(" -> ".join(optimal_path))
