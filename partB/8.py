@@ -49,7 +49,7 @@ if __name__ == "__main__":
 
     clauses = [c1, c2, c3]
     result = resolution(clauses) 
-    if not result: 
+    if result: 
         print("the set of clauses is unsatifiable(contradiction found)") 
     else: 
         print("the set of clauses is satisfiable") 
